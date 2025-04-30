@@ -9,9 +9,15 @@ const PORT = 1000;
 server.use(cors());
 server.use(express.json());
 
+server.get("/", async (req, res) => {
+  const allPosts = await db.select().from(posts);
+
+  res.json(allPosts);
+});
+
 server.post("/", async (req, res) => {
-  await db.insert(posts).values({ name: "post1", content: "hello world" });
-  res.send("okay");
+  const post = await db.insert(posts).values(req.body);
+  console.log("ok");
 });
 
 server.listen(PORT, () => {
