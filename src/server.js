@@ -1,7 +1,8 @@
 import express from "express";
-import { posts } from "./db/schema.js";
+import { posts, users } from "./db/schema.js";
 import { db } from "./db/index.js";
 import cors from "cors";
+import bcrypt from "bcrypt";
 
 const server = express();
 const PORT = 1000;
@@ -18,6 +19,12 @@ server.get("/", async (req, res) => {
 server.post("/", async (req, res) => {
   const post = await db.insert(posts).values(req.body);
   console.log("ok");
+});
+
+server.post("/login", async (req, res) => {
+  const test = await db
+    .insert(users)
+    .values({ email: "test@test.com", password: "test" });
 });
 
 server.listen(PORT, () => {
