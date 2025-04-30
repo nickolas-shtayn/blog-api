@@ -3,6 +3,7 @@ import { posts, users } from "./db/schema.js";
 import { db } from "./db/index.js";
 import cors from "cors";
 import bcrypt from "bcrypt";
+import { eq } from "drizzle-orm";
 
 const server = express();
 const PORT = 1000;
@@ -18,13 +19,36 @@ server.get("/", async (req, res) => {
 
 server.post("/", async (req, res) => {
   const post = await db.insert(posts).values(req.body);
-  console.log("ok");
+  res.send("ok");
 });
 
 server.post("/login", async (req, res) => {
-  const test = await db
-    .insert(users)
-    .values({ email: "test@test.com", password: "test" });
+  const { email, password } = req.body;
+
+  const result = await db.select().from(users).where(eq(users.email, email));
+
+  if (result.length > 0) {
+    const hashedPass = result[0].password;
+    const isMatch = await bcrypt.compare(password, hashedPass);
+
+    if (isMatch) {
+      res.send("authenticated");
+    } else {
+      res.send("wrong password");
+    }
+  } else {
+    res.send("wrong email");
+  }
+});
+
+server.post("/signup", async (req, res) => {
+  const { email, password } = req.body;
+
+  const hash = await bcrypt.hash(password, 13);
+
+  const signUp = await db.insert(users).values({ email, password: hash });
+
+  res.send("signed up");
 });
 
 server.listen(PORT, () => {
