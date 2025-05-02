@@ -4,12 +4,16 @@ import { db } from "./db/index.js";
 import cors from "cors";
 import bcrypt from "bcrypt";
 import { eq } from "drizzle-orm";
+import { v4 as uuidv4 } from "uuid";
+import cookieParser from "cookie-parser";
+import jwt from "jsonwebtoken";
 
 const server = express();
 const PORT = 1000;
 
 server.use(cors());
 server.use(express.json());
+server.use(cookieParser());
 
 server.get("/", async (req, res) => {
   const allPosts = await db.select().from(posts);
