@@ -36,6 +36,19 @@ server.post("/login", async (req, res) => {
     const isMatch = await bcrypt.compare(password, hashedPass);
 
     if (isMatch) {
+      const payload = {
+        sub: result[0].id,
+        email: result[0].email,
+      };
+      const token = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "1h",
+      });
+      res.cookie("jwt", token, {
+        httpOnly: true,
+        sameSite: "strict",
+        maxAge: 360000,
+        path: "/",
+      });
       res.send("authenticated");
     } else {
       res.send("wrong password");
@@ -49,7 +62,6 @@ server.post("/signup", async (req, res) => {
   const { email, password } = req.body;
 
   const hash = await bcrypt.hash(password, 13);
-
   const signUp = await db.insert(users).values({ email, password: hash });
 
   res.send("signed up");
