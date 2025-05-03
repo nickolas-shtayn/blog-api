@@ -11,7 +11,12 @@ import jwt from "jsonwebtoken";
 const server = express();
 const PORT = 1000;
 
-server.use(cors());
+server.use(
+  cors({
+    origin: "http://127.0.0.1:5500",
+    credentials: true,
+  })
+);
 server.use(express.json());
 server.use(cookieParser());
 
@@ -29,16 +34,16 @@ server.post("/", async (req, res) => {
 server.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
-  const result = await db.select().from(users).where(eq(users.email, email));
+  const user = await db.select().from(users).where(eq(users.email, email));
 
-  if (result.length > 0) {
-    const hashedPass = result[0].password;
+  if (user.length > 0) {
+    const hashedPass = user[0].password;
     const isMatch = await bcrypt.compare(password, hashedPass);
 
     if (isMatch) {
       const payload = {
-        sub: result[0].id,
-        email: result[0].email,
+        sub: user[0].id,
+        email: user[0].email,
       };
       const token = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
         expiresIn: "1h",
