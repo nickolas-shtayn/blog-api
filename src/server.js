@@ -19,16 +19,72 @@ server.use(express.json());
 
 const extractUserFromToken = function (req, res, next) {
   const token = req.headers.authorization;
-  const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-  req.user = decoded;
 
-  next();
+  if (!token) {
+    res.status(401).send("Unauthorized");
+    return;
+  }
+  try {
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).send("Expired");
+    } else {
+      return res.status(401).send("Invalid token");
+    }
+  }
 };
+
+server.get("/post/:id", async (req, res) => {
+  const postId = req.params.id;
+
+  const postData = await db.select().from(posts).where(eq(posts.id, postId));
+
+  res.status(200).json(postData);
+});
+
+server.post("/editpost", async (req, res) => {
+  const { id, name, content } = req.body;
+  await db.update(posts).set({ name, content }).where(eq(posts.id, id));
+
+  res.status(200).send("Post updated");
+});
 
 server.get("/", async (req, res) => {
   const allPosts = await db.select().from(posts);
 
   res.status(200).json(allPosts);
+});
+
+server.get("/user", extractUserFromToken, async (req, res) => {
+  const userId = req.user.sub;
+  const user = await db.select().from(users).where(eq(users.id, userId));
+
+  const userEmail = user[0].email;
+
+  res.status(200).json(userEmail);
+});
+server.get("/dashboard", extractUserFromToken, async (req, res) => {
+  const userId = req.user.sub;
+
+  const userPosts = await db
+    .select()
+    .from(posts)
+    .where(eq(posts.userId, userId));
+
+  const user = await db.select().from(users).where(eq(users.id, userId));
+
+  res.status(200).json(userPosts);
+});
+
+server.delete("/deletepost", async (req, res) => {
+  const postId = req.body.id;
+
+  await db.delete(posts).where(eq(posts.id, postId));
+
+  res.status(200).send("Post deleted");
 });
 
 server.post("/", extractUserFromToken, async (req, res) => {
@@ -55,7 +111,7 @@ server.post("/login", async (req, res) => {
       const token = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
         expiresIn: "1h",
       });
-      res.send(token);
+      res.send(token).status(200);
     } else {
       res.status(401).send("wrong password");
     }
@@ -73,7 +129,7 @@ server.post("/signup", async (req, res) => {
     const hash = await bcrypt.hash(password, 13);
     const signUp = await db.insert(users).values({ email, password: hash });
 
-    res.send("signed up");
+    res.status(200).send("signed up");
   } else {
     res.status(409).send("This email address is already registered");
   }
