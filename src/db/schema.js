@@ -1,5 +1,4 @@
-import { boolean } from "drizzle-orm/gel-core";
-import { integer, PgBoolean, pgTable, text } from "drizzle-orm/pg-core";
+import { integer, boolean, pgTable, text } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -13,4 +12,10 @@ export const posts = pgTable("posts", {
   name: text().notNull(),
   content: text().notNull(),
   userId: integer("user_id").references(() => users.id),
+});
+
+export const invites = pgTable("invites", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  email: text().notNull(),
+  code: text().notNull(),
 });

@@ -1,13 +1,16 @@
 import express from "express";
-import { posts, users } from "./db/schema.js";
+import { posts, users, invites } from "./db/schema.js";
 import { db } from "./db/index.js";
 import cors from "cors";
 import bcrypt from "bcrypt";
 import { eq } from "drizzle-orm";
 import jwt from "jsonwebtoken";
+import sgMail from "@sendgrid/mail";
 
 const server = express();
 const PORT = 1000;
+
+sgMail.setApiKey(process.env.SG_API_KEY);
 
 server.use(
   cors({
@@ -61,10 +64,14 @@ server.get("/", async (req, res) => {
 server.get("/user", extractUserFromToken, async (req, res) => {
   const userId = req.user.sub;
   const user = await db.select().from(users).where(eq(users.id, userId));
+  const admin = user[0].admin;
 
   const userEmail = user[0].email;
-
-  res.status(200).json(userEmail);
+  if (!admin) {
+    res.status(200).json({ userEmail });
+    return;
+  }
+  res.status(200).json({ userEmail, admin: true });
 });
 server.get("/dashboard", extractUserFromToken, async (req, res) => {
   const userId = req.user.sub;
@@ -131,7 +138,18 @@ server.get("/admin", async (req, res) => {
 });
 
 server.post("/signup", async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, inviteCode } = req.body;
+
+  if (inviteCode) {
+    const inviteCheck = await db
+      .select()
+      .from(invites)
+      .where(eq(invites.code, inviteCode));
+
+    if (inviteCheck.length === 0) {
+      return res.status(401).send("Invalid invite code");
+    }
+  }
 
   const user = await db.select().from(users).where(eq(users.email, email));
   const admin = await db.select().from(users).where(eq(users.admin, true));
@@ -147,11 +165,32 @@ server.post("/signup", async (req, res) => {
       const hash = await bcrypt.hash(password, 13);
       const signUp = await db
         .insert(users)
-        .values({ email, password: hash, admin: true });
+        .values({ email, password: hash, admin: false });
       res.status(200).send("signed up as user");
     }
   } else {
     res.status(409).send("This email address is already registered");
+  }
+});
+
+server.post("/invite", async (req, res) => {
+  const { email, invite } = req.body;
+
+  await db.insert(invites).values({ email, code: invite });
+
+  const msg = {
+    to: email,
+    from: "nickolasshtayn@protonmail.com",
+    subject: "Private link invite for blog",
+    text: `Here is your invite code to sign up for the blog: ${invite}\nSign up here: http://127.0.0.1:5500/signup/index.html?email=${email}`,
+    html: `<p>Here is your invite code to sign up for the blog:</p><p><strong>${invite}</strong></p><p>Sign up here: <a href="http://127.0.0.1:5500/signup/index.html?email=${email}">http://127.0.0.1:5500/signup/index.html?email=${email}</a></p>`,
+  };
+
+  try {
+    await sgMail.send(msg);
+    res.status(200).send("invite sent successfully");
+  } catch (error) {
+    res.status(500).send("Failed to send invite");
   }
 });
 

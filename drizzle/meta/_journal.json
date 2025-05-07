@@ -15,6 +15,13 @@
       "when": 1746635338176,
       "tag": "0001_hesitant_hedge_knight",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1746636920935,
+      "tag": "0002_sweet_the_order",
+      "breakpoints": true
     }
   ]
 }
