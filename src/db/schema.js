@@ -1,9 +1,11 @@
-import { integer, pgTable, text } from "drizzle-orm/pg-core";
+import { boolean } from "drizzle-orm/gel-core";
+import { integer, PgBoolean, pgTable, text } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   email: text().notNull(),
   password: text().notNull(),
+  admin: boolean("admin").default(false),
 });
 
 export const posts = pgTable("posts", {

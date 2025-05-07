@@ -120,16 +120,36 @@ server.post("/login", async (req, res) => {
   }
 });
 
+server.get("/admin", async (req, res) => {
+  const admin = await db.select().from(users).where(eq(users.admin, true));
+
+  if (admin.length === 0) {
+    res.status(404).send("No admin found");
+    return;
+  }
+  res.json(admin);
+});
+
 server.post("/signup", async (req, res) => {
   const { email, password } = req.body;
 
   const user = await db.select().from(users).where(eq(users.email, email));
+  const admin = await db.select().from(users).where(eq(users.admin, true));
 
   if (user.length === 0) {
-    const hash = await bcrypt.hash(password, 13);
-    const signUp = await db.insert(users).values({ email, password: hash });
-
-    res.status(200).send("signed up");
+    if (admin.length === 0) {
+      const hash = await bcrypt.hash(password, 13);
+      const signUp = await db
+        .insert(users)
+        .values({ email, password: hash, admin: true });
+      res.status(200).send("signed up as admin");
+    } else {
+      const hash = await bcrypt.hash(password, 13);
+      const signUp = await db
+        .insert(users)
+        .values({ email, password: hash, admin: true });
+      res.status(200).send("signed up as user");
+    }
   } else {
     res.status(409).send("This email address is already registered");
   }
