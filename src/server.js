@@ -205,8 +205,8 @@ server.post("/invite", extractUserFromToken, async (req, res) => {
     to: email,
     from: "nickolasshtayn@protonmail.com",
     subject: "Private link invite for blog",
-    text: `Here is your invite code to sign up for the blog: ${invite}\nSign up here: http://127.0.0.1:5500/signup/index.html?email=${email}`,
-    html: `<p>Here is your invite code to sign up for the blog:</p><p><strong>${invite}</strong></p><p>Sign up here: <a href="http://127.0.0.1:5500/signup/index.html?email=${email}">http://127.0.0.1:5500/signup/index.html?email=${email}</a></p>`,
+    text: `Here is your invite code to sign up for the blog: ${invite}\nSign up here: http://127.0.0.1:5500/link-signup/index.html?email=${email}`,
+    html: `<p>Here is your invite code to sign up for the blog:</p><p><strong>${invite}</strong></p><p>Sign up here: <a href="http://127.0.0.1:5500/link-signup/index.html?email=${email}">http://127.0.0.1:5500/link-signup/index.html?email=${email}</a></p>`,
   };
 
   try {
