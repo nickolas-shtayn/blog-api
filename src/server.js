@@ -48,15 +48,24 @@ server.get("/post/:id", async (req, res) => {
   res.status(200).json(postData);
 });
 
-// add authentication
 server.post("/editpost", extractUserFromToken, async (req, res) => {
   const { id, name, content } = req.body;
+
+  const user = req.user;
+
+  const post = await db.select().from(posts).where(eq(posts.id, id));
+
+  if (post[0].userId !== user.sub) {
+    res.status(401).send("Unauthorized");
+    return;
+  }
+
   await db.update(posts).set({ name, content }).where(eq(posts.id, id));
 
   res.status(200).send("Post updated");
 });
 
-server.get("/", async (req, res) => {
+server.get("/fetchposts", async (req, res) => {
   const allPosts = await db.select().from(posts);
 
   res.status(200).json(allPosts);
@@ -87,17 +96,23 @@ server.get("/dashboard", extractUserFromToken, async (req, res) => {
   res.status(200).json(userPosts);
 });
 
-// add authentication
 server.delete("/deletepost", extractUserFromToken, async (req, res) => {
   const postId = req.body.id;
+  const user = req.user;
+
+  const post = await db.select().from(posts).where(eq(posts.id, postId));
+
+  if (post[0].userId !== user.sub) {
+    res.status(401).send("Unauthorized");
+    return;
+  }
 
   await db.delete(posts).where(eq(posts.id, postId));
 
   res.status(200).send("Post deleted");
 });
 
-// add authentication
-server.post("/", extractUserFromToken, async (req, res) => {
+server.post("/createpost", extractUserFromToken, async (req, res) => {
   const { name, content } = req.body;
   const userId = req.user.sub;
   const post = await db.insert(posts).values({ name, content, userId });
@@ -176,10 +191,14 @@ server.post("/signup", async (req, res) => {
   }
 });
 
-// add authentication
+// add authorization
 server.post("/invite", extractUserFromToken, async (req, res) => {
   const { email, invite } = req.body;
+  const user = await db.select().from(users).where(eq(users.id, req.user.sub));
 
+  if (!user[0]?.admin) {
+    return res.status(403).send("Only admin can send invites");
+  }
   await db.insert(invites).values({ email, code: invite });
 
   const msg = {
