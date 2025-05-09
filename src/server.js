@@ -149,10 +149,10 @@ server.get("/admin", async (req, res) => {
   const admin = await db.select().from(users).where(eq(users.admin, true));
 
   if (admin.length === 0) {
-    res.status(404).send("No admin found");
+    res.status(200).send("no admin found");
     return;
   }
-  res.json(admin);
+  res.status(404).send("admin exists");
 });
 
 server.post("/signup", async (req, res) => {
