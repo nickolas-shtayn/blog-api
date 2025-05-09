@@ -48,7 +48,8 @@ server.get("/post/:id", async (req, res) => {
   res.status(200).json(postData);
 });
 
-server.post("/editpost", async (req, res) => {
+// add authentication
+server.post("/editpost", extractUserFromToken, async (req, res) => {
   const { id, name, content } = req.body;
   await db.update(posts).set({ name, content }).where(eq(posts.id, id));
 
@@ -86,7 +87,8 @@ server.get("/dashboard", extractUserFromToken, async (req, res) => {
   res.status(200).json(userPosts);
 });
 
-server.delete("/deletepost", async (req, res) => {
+// add authentication
+server.delete("/deletepost", extractUserFromToken, async (req, res) => {
   const postId = req.body.id;
 
   await db.delete(posts).where(eq(posts.id, postId));
@@ -94,6 +96,7 @@ server.delete("/deletepost", async (req, res) => {
   res.status(200).send("Post deleted");
 });
 
+// add authentication
 server.post("/", extractUserFromToken, async (req, res) => {
   const { name, content } = req.body;
   const userId = req.user.sub;
@@ -173,7 +176,8 @@ server.post("/signup", async (req, res) => {
   }
 });
 
-server.post("/invite", async (req, res) => {
+// add authentication
+server.post("/invite", extractUserFromToken, async (req, res) => {
   const { email, invite } = req.body;
 
   await db.insert(invites).values({ email, code: invite });
