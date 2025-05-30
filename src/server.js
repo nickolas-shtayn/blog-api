@@ -115,8 +115,11 @@ server.delete("/deletepost", extractUserFromToken, async (req, res) => {
 server.post("/createpost", extractUserFromToken, async (req, res) => {
   const { name, content } = req.body;
   const userId = req.user.sub;
-  const post = await db.insert(posts).values({ name, content, userId });
-  res.status(200).send("post added to user");
+  const post = await db
+    .insert(posts)
+    .values({ name, content, userId })
+    .returning();
+  res.status(200).json({ id: post[0].id, name, content });
 });
 
 server.post("/login", async (req, res) => {
