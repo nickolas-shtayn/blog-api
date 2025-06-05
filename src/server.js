@@ -6,6 +6,7 @@ import bcrypt from "bcrypt";
 import { eq } from "drizzle-orm";
 import jwt from "jsonwebtoken";
 import sgMail from "@sendgrid/mail";
+import { htmlToText } from "html-to-text";
 
 const server = express();
 const PORT = 1000;
@@ -67,8 +68,12 @@ server.post("/editpost", extractUserFromToken, async (req, res) => {
 
 server.get("/fetchposts", async (req, res) => {
   const allPosts = await db.select().from(posts);
+  const postsWithPlainText = allPosts.map((post) => ({
+    ...post,
+    content: htmlToText(post.content),
+  }));
 
-  res.status(200).json(allPosts);
+  res.status(200).json(postsWithPlainText);
 });
 
 server.get("/user", extractUserFromToken, async (req, res) => {
@@ -93,7 +98,12 @@ server.get("/dashboard", extractUserFromToken, async (req, res) => {
 
   const user = await db.select().from(users).where(eq(users.id, userId));
 
-  res.status(200).json(userPosts);
+  const postsWithPlainText = userPosts.map((post) => ({
+    ...post,
+    content: htmlToText(post.content),
+  }));
+
+  res.status(200).json(postsWithPlainText);
 });
 
 server.delete("/deletepost", extractUserFromToken, async (req, res) => {
